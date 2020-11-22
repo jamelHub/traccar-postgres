@@ -1,0 +1,42 @@
+version: "3"
+services:
+  traccar-db:
+    container_name: traccar-db
+    image: postgres
+    restart: unless-stopped
+    ports:
+      - 6543:5432
+    volumes:
+      - ./traccardb:/var/lib/postgresql
+    environment:
+      POSTGRES_USER: ${DATABASE_USER}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      POSTGRES_DB: ${DATABASE}
+  traccar_test:
+    build: .
+    container_name: traccar_test
+    hostname: traccar
+    restart: unless-stopped
+    depends_on:
+      - traccar-db
+    environment:
+      DATABASE_DRIVER: ${DATABASE_DRIVER}
+      DATABASE_URL: jdbc:postgresql://${DATABASE_HOST}:${DATABASE_PORT}/${DATABASE}
+      DATABASE_USER: ${DATABASE_USER}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1m"
+        max-file: "100"
+    volumes:
+      - ./logs:/opt/traccar/logs:rw
+      - ./traccar.xml:/opt/traccar/conf/traccar.xml:ro
+      - ./web:/opt/traccar/web:rw
+    ports:
+      - "5000-5150:5000-5150"
+      - "5000-5150:5000-5150/udp"
+      - "8082:8082"
+volumes:
+  traccardb:
+    driver: "local"
